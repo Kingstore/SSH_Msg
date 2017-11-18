@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--Spring的约束文件 使用那些模块就标记那些模块的约束文档 -->
+<beans xmlns="http://www.springframework.org/schema/beans"
+	   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+	   xmlns:aop="http://www.springframework.org/schema/aop" xmlns:tx="http://www.springframework.org/schema/tx"
+	   xsi:schemaLocation="
+    http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/context
+        http://www.springframework.org/schema/context/spring-context.xsd
+        http://www.springframework.org/schema/aop
+        http://www.springframework.org/schema/aop/spring-aop.xsd
+        http://www.springframework.org/schema/tx
+        http://www.springframework.org/schema/tx/spring-tx.xsd ">
+
+
+	<!--1、加载外部配置文件 -->
+	<context:property-placeholder location="classpath:dbconfig.properties" />
+
+	<context:component-scan base-package="com.cs.qsx.dao"></context:component-scan>
+	<context:component-scan base-package="com.cs.qsx.service"></context:component-scan>
+	<!--2、配置数据库连接池 -->
+	<bean id="dataSource" class="com.alibaba.druid.pool.DruidDataSource"
+		  init-method="init" destroy-method="close">
+		<!-- 基本属性 url、user、password -->
+		<property name="driverClassName" value="${jdbc.driverclass}" />
+		<property name="url" value="${jdbc.url}" />
+		<property name="username" value="${jdbc.username}" />
+		<property name="password" value="${jdbc.password}" />
+
+		<!-- 配置监控统计拦截的filters -->
+		<property name="filters" value="stat" />
+
+		<!-- 配置初始化大小、最小、最大 -->
+		<property name="maxActive" value="20" />
+		<property name="initialSize" value="1" />
+		<property name="minIdle" value="1" />
+
+		<!-- 配置获取连接等待超时的时间 -->
+		<property name="maxWait" value="60000" />
+
+		<!-- 配置间隔多久才进行一次检测，检测需要关闭的空闲连接，单位是毫秒 -->
+		<property name="timeBetweenEvictionRunsMillis" value="60000" />
+
+		<!-- 配置一个连接在池中最小生存的时间，单位是毫秒 -->
+		<property name="minEvictableIdleTimeMillis" value="300000" />
+
+		<property name="testWhileIdle" value="true" />
+		<property name="testOnBorrow" value="false" />
+		<property name="testOnReturn" value="false" />
+
+		<!-- 打开PSCache，并且指定每个连接上PSCache的大小 -->
+		<property name="poolPreparedStatements" value="true" />
+		<property name="maxOpenPreparedStatements" value="20" />
+	</bean>
+	<!-- 3、配置SessionFactory -->
+	<bean id="sessionFactory"
+		  class="org.springframework.orm.hibernate5.LocalSessionFactoryBean">
+		<!--配置数据库连接池 -->
+		<property name="dataSource" ref="dataSource"></property>
+		<!--Hibernate的设置信息 -->
+		<property name="hibernateProperties">
+			<props>
+				<!--方言 -->
+				<prop key="hibernate.dialect">org.hibernate.dialect.MySQL57Dialect</prop>
+				<!--显示SQL -->
+				<prop key="hibernate.show_sql">false</prop>
+				<!--格式化sql语句 -->
+				<prop key="hibernate.format_sql">false</prop>
+				<!--ddl自动语句 -->
+				<prop key="hibernate.hbm2ddl.auto">update</prop>
+				<!-- <prop key="hibernate.current_session_context_class">thread</prop> -->
+				<!-- 最好使用Spring中对SessionContext的子类 -->
+				<prop key="hibernate.current_session_context_class">org.springframework.orm.hibernate5.SpringSessionContext
+				</prop>
+			</props>
+		</property>
+		<!--扫描Hibernate注解的实体类包 -->
+		<property name="packagesToScan">
+			<value>com.cs.qsx.domain</value>
+		</property>
+	</bean>
+	<!--4、配置事务管理对象  -->
+	<bean id="txManager" class="org.springframework.orm.hibernate5.HibernateTransactionManager">
+		<property name="sessionFactory" ref="sessionFactory"></property>
+	</bean>
+	<!--配置AOP注解 -->
+	<aop:aspectj-autoproxy></aop:aspectj-autoproxy>
+	<!--设置注解事务的管理对象 -->
+	<tx:annotation-driven transaction-manager="txManager"></tx:annotation-driven>
+</beans>
